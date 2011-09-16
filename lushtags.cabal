@@ -1,0 +1,16 @@
+name:                lushtags
+version:             0.0.1
+category:            Development
+synopsis:            Create ctags compatible tags files for Haskell programs
+license:             MIT
+license-file:        LICENSE
+author:              Bit Connor
+maintainer:          bit@mutantlemon.com
+cabal-version:       >=1.10
+build-type:          Simple
+
+executable lushtags
+  hs-source-dirs:    src
+  main-is:           Main.hs
+  default-language:  Haskell98
+  build-depends:     base >= 4 && < 5
