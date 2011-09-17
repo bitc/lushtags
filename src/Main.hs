@@ -16,10 +16,13 @@ module Main (main) where
 
 import Data.List (isPrefixOf)
 import Data.Vector(Vector, fromList)
+import Language.Haskell.Exts.Annotated (parseFileContentsWithMode, ParseMode(..), knownExtensions, ParseResult(ParseOk, ParseFailed))
 import System.Environment (getArgs, getProgName)
 import System.IO (hPutStrLn, stderr)
-import qualified Data.Text as T (unpack, lines)
-import qualified Data.Text.IO as T (readFile)
+import qualified Data.Text as T (unpack, lines, pack, unlines)
+import qualified Data.Text.IO as T (readFile, putStr)
+
+import Tags (Tag, createTags, tagToString)
 
 main :: IO ()
 main = do
@@ -29,14 +32,28 @@ main = do
         [] -> do
             progName <- getProgName
             hPutStrLn stderr $ "Usage: " ++ progName ++ " [--] <file>"
-        filename:_ -> processFile filename
+        filename:_ -> processFile filename >>= printTags
 
-processFile :: FilePath -> IO ()
+printTags :: [Tag] -> IO ()
+printTags tags =
+    T.putStr $ T.unlines $ map (T.pack . tagToString) tags
+
+processFile :: FilePath -> IO [Tag]
 processFile file = do
     (fileContents, fileLines) <- loadFile file
-    -- Testing code:
-    putStrLn fileContents
-    putStrLn (show fileLines)
+    case parseFileContentsWithMode parseMode fileContents of
+        ParseFailed loc message ->
+            -- TODO Better error reporting
+            fail $ "Parse error: " ++ show loc ++ ": " ++ message
+        ParseOk parsedModule -> return $ createTags (parsedModule, fileLines)
+    where
+        parseMode = ParseMode
+            { parseFilename = file
+            , extensions = knownExtensions
+            , ignoreLanguagePragmas = False
+            , ignoreLinePragmas = True
+            , fixities = Nothing
+            }
 
 loadFile :: FilePath -> IO (String, Vector String)
 loadFile file = do
