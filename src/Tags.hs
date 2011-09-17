@@ -37,6 +37,7 @@ data Tag = Tag
     , tagKind :: TagKind
     , tagLine :: Int
     , tagScope :: Maybe String
+    , tagSignature :: Maybe String
     }
     deriving (Eq, Ord, Show)
 
@@ -54,26 +55,29 @@ tagKindLetter TFunction = "f"
 tagToString :: Tag -> String
 tagToString tag =
     let scopeStr = maybe "" ("\tclass:"++) (tagScope tag)
-    in tagName tag ++ "\t" ++ tagFile tag ++ "\t" ++ tagPattern tag ++ ";\"\t" ++ tagKindLetter (tagKind tag) ++ "\tline:" ++ show (tagLine tag) ++ scopeStr
+        signatureStr = maybe "" ("\tsignature:"++) (tagSignature tag)
+    in tagName tag ++ "\t" ++ tagFile tag ++ "\t" ++ tagPattern tag ++ ";\"\t" ++ tagKindLetter (tagKind tag) ++ "\tline:" ++ show (tagLine tag) ++ scopeStr ++ signatureStr
 
 createTags :: (Module SrcSpanInfo, Vector String) -> [Tag]
 createTags (Module _ mbHead _ imports _, fileLines) =
     let moduleTag = case mbHead of
-            Just (ModuleHead _ (ModuleName loc name) _ _) -> [createTag name TModule Nothing loc]
+            Just (ModuleHead _ (ModuleName loc name) _ _) -> [createTag name TModule Nothing Nothing loc]
             Nothing -> []
         importTags = map createImportTag imports
     in moduleTag ++ importTags
     where
         createImportTag :: ImportDecl SrcSpanInfo -> Tag
-        createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ _ _) = createTag name TImport Nothing loc
-        createTag :: String -> TagKind -> Maybe String -> SrcSpanInfo -> Tag
-        createTag name kind scope (SrcSpanInfo (SrcSpan file line _ _ _) _) = Tag
+        createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ _ _) =
+            createTag name TImport Nothing Nothing loc
+        createTag :: String -> TagKind -> Maybe String -> Maybe String -> SrcSpanInfo -> Tag
+        createTag name kind scope signature (SrcSpanInfo (SrcSpan file line _ _ _) _) = Tag
             { tagName = name
             , tagFile = file
             , tagPattern = patternFromLine line
             , tagKind = kind
             , tagLine = line
             , tagScope = scope
+            , tagSignature = signature
             }
         patternFromLine :: Int -> String
         patternFromLine lineNumber =
