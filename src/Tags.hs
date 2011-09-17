@@ -29,7 +29,7 @@ data Tag = Tag
     , tagPattern :: String
     , tagKind :: TagKind
     , tagLine :: Int
-    , tagScope :: Maybe String
+    , tagParent :: Maybe (TagKind, String)
     , tagSignature :: Maybe String
     }
     deriving (Eq, Ord, Show)
@@ -38,27 +38,39 @@ data TagKind
     = TModule
     | TImport
     | TType
+    | TData
+    | TNewType
+    | TConstructor
     | TFunction
     deriving (Eq, Ord, Show)
 
-tagKindLetter :: TagKind -> String
-tagKindLetter TModule = "m"
-tagKindLetter TImport = "i"
-tagKindLetter TType = "t"
-tagKindLetter TFunction = "f"
+-- First letter of each kind name must be unique!
+tagKindName :: TagKind -> String
+tagKindName TModule = "module"
+tagKindName TImport = "import"
+tagKindName TType = "type"
+tagKindName TData = "data"
+tagKindName TNewType = "newtype"
+tagKindName TConstructor = "constructor"
+tagKindName TFunction = "function"
+
+tagKindLetter :: TagKind -> Char
+tagKindLetter = head . tagKindName
 
 tagToString :: Tag -> String
 tagToString tag =
-    let scopeStr = maybe "" ("\tclass:"++) (tagScope tag)
+    let parentStr = case tagParent tag of
+            Nothing -> ""
+            Just (kind, name) -> "\t" ++ tagKindName kind ++ ":" ++ name
         signatureStr = case tagSignature tag of
             Nothing -> ""
             Just sig -> "\tsignature:("++ sig ++ ")"
     in tagName tag ++ "\t" ++
             tagFile tag ++ "\t" ++
             tagPattern tag ++ ";\"\t" ++
-            tagKindLetter (tagKind tag) ++
-            "\tline:" ++ show (tagLine tag) ++
-            scopeStr ++
+            tagKindLetter (tagKind tag) : "\t" ++
+            "line:" ++ show (tagLine tag) ++
+            parentStr ++
             signatureStr
 
 type FileLines = Vector String
@@ -78,15 +90,15 @@ createTags (Module _ mbHead _ imports decls, fileLines) =
         tagC = ($ fileLines)
 createTags _ = error "TODO Module is XmlPage/XmlHybrid (!)"
 
-createTag :: String -> TagKind -> Maybe String -> Maybe String -> SrcSpanInfo -> TagC
-createTag name kind scope signature (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
+createTag :: String -> TagKind -> Maybe (TagKind, String) -> Maybe String -> SrcSpanInfo -> TagC
+createTag name kind parent signature (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
     { tagName = name
     , tagFile = file
     -- TODO This probably needs to be escaped:
     , tagPattern = "/^" ++ (fileLines ! (line - 1)) ++ "$/"
     , tagKind = kind
     , tagLine = line
-    , tagScope = scope
+    , tagParent = parent
     , tagSignature = signature
     }
 
@@ -101,12 +113,30 @@ createDeclTags :: Decl SrcSpanInfo -> [TagC]
 createDeclTags (TypeDecl _ hd _) =
     let (name, loc) = extractDeclHead hd
     in [createTag name TType Nothing Nothing loc]
+createDeclTags (DataDecl _ dataOrNew _ hd constructors _) =
+    let (name, loc) = extractDeclHead hd
+        kind = case dataOrNew of
+            DataType _ -> TData
+            NewType _ -> TNewType
+        dataTag = createTag name kind Nothing Nothing loc
+    in dataTag : map (createConstructorTag (kind, name)) constructors
 createDeclTags _ = []
+
+-- TODO Also create tags for record fields
+createConstructorTag :: (TagKind, String) -> QualConDecl SrcSpanInfo -> TagC
+createConstructorTag parent (QualConDecl _ _ _ con) =
+    let (name, loc) = extractConDecl con
+    in createTag name TConstructor (Just parent) Nothing loc
 
 extractDeclHead :: DeclHead SrcSpanInfo -> (String, SrcSpanInfo)
 extractDeclHead (DHead _ name _) = extractName name
 extractDeclHead (DHInfix _ _ name _) = extractName name
 extractDeclHead (DHParen _ hd') = extractDeclHead hd'
+
+extractConDecl :: ConDecl SrcSpanInfo -> (String, SrcSpanInfo)
+extractConDecl (ConDecl _ name _) = extractName name
+extractConDecl (InfixConDecl _ _ name _) = extractName name
+extractConDecl (RecDecl _ name _) = extractName name
 
 extractName :: Name SrcSpanInfo -> (String, SrcSpanInfo)
 extractName (Ident loc name) = (name, loc)
