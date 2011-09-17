@@ -122,11 +122,18 @@ createTag name kind parent signature access (SrcSpanInfo (SrcSpan file line _ _ 
     }
 
 createImportTag :: ImportDecl SrcSpanInfo -> TagC
-createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ mbAlias _) =
+createImportTag (ImportDecl loc (ModuleName _ name) qualified _ _ mbAlias mbSpecs) =
     let signature = case mbAlias of
             Nothing -> Nothing
             Just (ModuleName _ alias) -> Just alias
-    in createTag name TImport Nothing signature Nothing loc
+        access = case mbSpecs of
+            Just (ImportSpecList _ False _) ->
+                if qualified then Just AccessProtected else Nothing
+            Just (ImportSpecList _ True _) ->
+                -- imported names are excluded by 'hiding'
+                if qualified then Just AccessProtected else Just AccessPrivate
+            Nothing -> if qualified then Just AccessProtected else Just AccessPublic
+    in createTag name TImport Nothing signature access loc
 
 createDeclTags :: Decl SrcSpanInfo -> [TagC]
 createDeclTags (TypeDecl _ hd _) =
