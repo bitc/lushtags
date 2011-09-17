@@ -69,8 +69,11 @@ createTags (Module _ mbHead _ imports _, fileLines) =
     in moduleTag ++ importTags
     where
         createImportTag :: ImportDecl SrcSpanInfo -> Tag
-        createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ _ _) =
-            createTag name TImport Nothing Nothing loc
+        createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ mbAlias _) =
+            let signature = case mbAlias of
+                    Nothing -> Nothing
+                    Just (ModuleName _ alias) -> Just alias
+            in createTag name TImport Nothing signature loc
         createTag :: String -> TagKind -> Maybe String -> Maybe String -> SrcSpanInfo -> Tag
         createTag name kind scope signature (SrcSpanInfo (SrcSpan file line _ _ _) _) = Tag
             { tagName = name
