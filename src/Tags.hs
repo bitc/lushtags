@@ -32,6 +32,7 @@ data Tag = Tag
     , tagLine :: Int
     , tagParent :: Maybe (TagKind, String)
     , tagSignature :: Maybe String
+    , tagAccess :: Maybe TagAccess
     }
     deriving (Eq, Ord, Show)
 
@@ -43,6 +44,16 @@ data TagKind
     | TNewType
     | TConstructor
     | TFunction
+    deriving (Eq, Ord, Show)
+
+-- Access modifiers comes from the C++ world. Haskell doesn't have them, but
+-- they are useful for marking our tags with similar meanings. For example,
+-- marking all exported functions as public, or marking qualified imports
+-- differently from unqualified ones.
+data TagAccess
+    = AccessPublic
+    | AccessPrivate
+    | AccessProtected
     deriving (Eq, Ord, Show)
 
 -- First letter of each kind name must be unique!
@@ -66,13 +77,19 @@ tagToString tag =
         signatureStr = case tagSignature tag of
             Nothing -> ""
             Just sig -> "\tsignature:("++ sig ++ ")"
+        accessStr = case tagAccess tag of
+            Nothing -> ""
+            Just AccessPublic -> "\taccess:public"
+            Just AccessPrivate -> "\taccess:private"
+            Just AccessProtected -> "\taccess:protected"
     in tagName tag ++ "\t" ++
             tagFile tag ++ "\t" ++
             tagPattern tag ++ ";\"\t" ++
             tagKindLetter (tagKind tag) : "\t" ++
             "line:" ++ show (tagLine tag) ++
             parentStr ++
-            signatureStr
+            signatureStr ++
+            accessStr
 
 type FileLines = Vector String
 type TagC = FileLines -> Tag
@@ -81,7 +98,7 @@ createTags :: (Module SrcSpanInfo, FileLines) -> [Tag]
 createTags (Module _ mbHead _ imports decls, fileLines) =
     let moduleTag = case mbHead of
             Just (ModuleHead _ (ModuleName loc name) _ _) ->
-                [tagC $ createTag name TModule Nothing Nothing loc]
+                [tagC $ createTag name TModule Nothing Nothing Nothing loc]
             Nothing -> []
         importTags = map (tagC . createImportTag) imports
         declsTags = map tagC (concatMap createDeclTags decls)
@@ -91,8 +108,8 @@ createTags (Module _ mbHead _ imports decls, fileLines) =
         tagC = ($ fileLines)
 createTags _ = error "TODO Module is XmlPage/XmlHybrid (!)"
 
-createTag :: String -> TagKind -> Maybe (TagKind, String) -> Maybe String -> SrcSpanInfo -> TagC
-createTag name kind parent signature (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
+createTag :: String -> TagKind -> Maybe (TagKind, String) -> Maybe String -> Maybe TagAccess -> SrcSpanInfo -> TagC
+createTag name kind parent signature access (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
     { tagName = name
     , tagFile = file
     -- TODO This probably needs to be escaped:
@@ -101,6 +118,7 @@ createTag name kind parent signature (SrcSpanInfo (SrcSpan file line _ _ _) _) f
     , tagLine = line
     , tagParent = parent
     , tagSignature = signature
+    , tagAccess = access
     }
 
 createImportTag :: ImportDecl SrcSpanInfo -> TagC
@@ -108,18 +126,18 @@ createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ mbAlias _) =
     let signature = case mbAlias of
             Nothing -> Nothing
             Just (ModuleName _ alias) -> Just alias
-    in createTag name TImport Nothing signature loc
+    in createTag name TImport Nothing signature Nothing loc
 
 createDeclTags :: Decl SrcSpanInfo -> [TagC]
 createDeclTags (TypeDecl _ hd _) =
     let (name, loc) = extractDeclHead hd
-    in [createTag name TType Nothing Nothing loc]
+    in [createTag name TType Nothing Nothing Nothing loc]
 createDeclTags (DataDecl _ dataOrNew _ hd constructors _) =
     let (name, loc) = extractDeclHead hd
         kind = case dataOrNew of
             DataType _ -> TData
             NewType _ -> TNewType
-        dataTag = createTag name kind Nothing Nothing loc
+        dataTag = createTag name kind Nothing Nothing Nothing loc
     in dataTag : map (createConstructorTag (kind, name)) constructors
 createDeclTags (TypeSig _ names t) =
     map createFunctionTag names
@@ -128,14 +146,14 @@ createDeclTags (TypeSig _ names t) =
         createFunctionTag :: Name SrcSpanInfo -> TagC
         createFunctionTag name =
             let (n, loc) = extractName name
-            in createTag n TFunction Nothing (Just sig) loc
+            in createTag n TFunction Nothing (Just sig) Nothing loc
 createDeclTags _ = []
 
 -- TODO Also create tags for record fields
 createConstructorTag :: (TagKind, String) -> QualConDecl SrcSpanInfo -> TagC
 createConstructorTag parent (QualConDecl _ _ _ con) =
     let (name, loc) = extractConDecl con
-    in createTag name TConstructor (Just parent) Nothing loc
+    in createTag name TConstructor (Just parent) Nothing Nothing loc
 
 extractDeclHead :: DeclHead SrcSpanInfo -> (String, SrcSpanInfo)
 extractDeclHead (DHead _ name _) = extractName name
