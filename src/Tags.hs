@@ -22,6 +22,7 @@ module Tags
 import Data.Vector(Vector, (!))
 import Language.Haskell.Exts.Annotated (SrcSpan(..), SrcSpanInfo(..))
 import Language.Haskell.Exts.Annotated.Syntax
+import Language.Haskell.Exts.Pretty (prettyPrintStyleMode, Style(..), Mode(OneLineMode), defaultMode)
 
 data Tag = Tag
     { tagName :: String
@@ -120,6 +121,14 @@ createDeclTags (DataDecl _ dataOrNew _ hd constructors _) =
             NewType _ -> TNewType
         dataTag = createTag name kind Nothing Nothing loc
     in dataTag : map (createConstructorTag (kind, name)) constructors
+createDeclTags (TypeSig _ names t) =
+    map createFunctionTag names
+    where
+        sig = prettyPrintStyleMode (Style OneLineMode 0 0) defaultMode t
+        createFunctionTag :: Name SrcSpanInfo -> TagC
+        createFunctionTag name =
+            let (n, loc) = extractName name
+            in createTag n TFunction Nothing (Just sig) loc
 createDeclTags _ = []
 
 -- TODO Also create tags for record fields
