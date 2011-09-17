@@ -66,9 +66,10 @@ tagToString tag =
             scopeStr ++
             signatureStr
 
-type TagC = Vector String -> Tag
+type FileLines = Vector String
+type TagC = FileLines -> Tag
 
-createTags :: (Module SrcSpanInfo, Vector String) -> [Tag]
+createTags :: (Module SrcSpanInfo, FileLines) -> [Tag]
 createTags (Module _ mbHead _ imports _, fileLines) =
     let moduleTag = case mbHead of
             Just (ModuleHead _ (ModuleName loc name) _ _) ->
