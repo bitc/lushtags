@@ -85,6 +85,7 @@ createTag :: String -> TagKind -> Maybe String -> Maybe String -> SrcSpanInfo ->
 createTag name kind scope signature (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
     { tagName = name
     , tagFile = file
+    -- TODO This probably needs to be escaped:
     , tagPattern = "/^" ++ (fileLines ! (line - 1)) ++ "$/"
     , tagKind = kind
     , tagLine = line
