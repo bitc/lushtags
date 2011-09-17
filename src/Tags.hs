@@ -20,18 +20,8 @@ module Tags
     ) where
 
 import Data.Vector(Vector, (!))
-import Language.Haskell.Exts.Annotated
-    (
-      ImportDecl(..)
-    , Module(..)
-    , ModuleHead(..)
-    , ModuleName(..)
-    , Decl(..)
-    , DeclHead(..)
-    , SrcSpan(..)
-    , SrcSpanInfo(..)
-    , Name(..)
-    )
+import Language.Haskell.Exts.Annotated (SrcSpan(..), SrcSpanInfo(..))
+import Language.Haskell.Exts.Annotated.Syntax
 
 data Tag = Tag
     { tagName :: String
