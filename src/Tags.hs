@@ -55,7 +55,9 @@ tagKindLetter TFunction = "f"
 tagToString :: Tag -> String
 tagToString tag =
     let scopeStr = maybe "" ("\tclass:"++) (tagScope tag)
-        signatureStr = maybe "" ("\tsignature:"++) (tagSignature tag)
+        signatureStr = case tagSignature tag of
+            Nothing -> ""
+            Just sig -> "\tsignature:("++ sig ++ ")"
     in tagName tag ++ "\t" ++ tagFile tag ++ "\t" ++ tagPattern tag ++ ";\"\t" ++ tagKindLetter (tagKind tag) ++ "\tline:" ++ show (tagLine tag) ++ scopeStr ++ signatureStr
 
 createTags :: (Module SrcSpanInfo, Vector String) -> [Tag]
