@@ -60,34 +60,35 @@ tagToString tag =
             Just sig -> "\tsignature:("++ sig ++ ")"
     in tagName tag ++ "\t" ++ tagFile tag ++ "\t" ++ tagPattern tag ++ ";\"\t" ++ tagKindLetter (tagKind tag) ++ "\tline:" ++ show (tagLine tag) ++ scopeStr ++ signatureStr
 
+type TagC = Vector String -> Tag
+
 createTags :: (Module SrcSpanInfo, Vector String) -> [Tag]
 createTags (Module _ mbHead _ imports _, fileLines) =
     let moduleTag = case mbHead of
-            Just (ModuleHead _ (ModuleName loc name) _ _) -> [createTag name TModule Nothing Nothing loc]
+            Just (ModuleHead _ (ModuleName loc name) _ _) ->
+                [tagC $ createTag name TModule Nothing Nothing loc]
             Nothing -> []
-        importTags = map createImportTag imports
+        importTags = map (tagC . createImportTag) imports
     in moduleTag ++ importTags
     where
-        createImportTag :: ImportDecl SrcSpanInfo -> Tag
-        createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ mbAlias _) =
-            let signature = case mbAlias of
-                    Nothing -> Nothing
-                    Just (ModuleName _ alias) -> Just alias
-            in createTag name TImport Nothing signature loc
-        createTag :: String -> TagKind -> Maybe String -> Maybe String -> SrcSpanInfo -> Tag
-        createTag name kind scope signature (SrcSpanInfo (SrcSpan file line _ _ _) _) = Tag
-            { tagName = name
-            , tagFile = file
-            , tagPattern = patternFromLine line
-            , tagKind = kind
-            , tagLine = line
-            , tagScope = scope
-            , tagSignature = signature
-            }
-        patternFromLine :: Int -> String
-        patternFromLine lineNumber =
-            let index = lineNumber - 1
-                line = fileLines ! index
-            in "/^" ++ line ++ "$/"
+        tagC :: TagC -> Tag
+        tagC = ($ fileLines)
 createTags _ = error "TODO Module is XmlPage/XmlHybrid (!)"
 
+createTag :: String -> TagKind -> Maybe String -> Maybe String -> SrcSpanInfo -> TagC
+createTag name kind scope signature (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
+    { tagName = name
+    , tagFile = file
+    , tagPattern = "/^" ++ (fileLines ! (line - 1)) ++ "$/"
+    , tagKind = kind
+    , tagLine = line
+    , tagScope = scope
+    , tagSignature = signature
+    }
+
+createImportTag :: ImportDecl SrcSpanInfo -> TagC
+createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ mbAlias _) =
+    let signature = case mbAlias of
+            Nothing -> Nothing
+            Just (ModuleName _ alias) -> Just alias
+    in createTag name TImport Nothing signature loc
