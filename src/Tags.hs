@@ -38,6 +38,7 @@ data Tag = Tag
 
 data TagKind
     = TModule
+    | TExport
     | TImport
     | TType
     | TData
@@ -59,6 +60,7 @@ data TagAccess
 -- First letter of each kind name must be unique!
 tagKindName :: TagKind -> String
 tagKindName TModule = "module"
+tagKindName TExport = "export"
 tagKindName TImport = "import"
 tagKindName TType = "type"
 tagKindName TData = "data"
@@ -96,13 +98,10 @@ type TagC = FileLines -> Tag
 
 createTags :: (Module SrcSpanInfo, FileLines) -> [Tag]
 createTags (Module _ mbHead _ imports decls, fileLines) =
-    let moduleTag = case mbHead of
-            Just (ModuleHead _ (ModuleName loc name) _ _) ->
-                [tagC $ createTag name TModule Nothing Nothing Nothing loc]
-            Nothing -> []
+    let moduleTags = map tagC (maybe [] createModuleTags mbHead)
         importTags = map (tagC . createImportTag) imports
         declsTags = map tagC (concatMap createDeclTags decls)
-    in moduleTag ++ importTags ++ declsTags
+    in moduleTags ++ importTags ++ declsTags
     where
         tagC :: TagC -> Tag
         tagC = ($ fileLines)
@@ -120,6 +119,19 @@ createTag name kind parent signature access (SrcSpanInfo (SrcSpan file line _ _ 
     , tagSignature = signature
     , tagAccess = access
     }
+
+createModuleTags :: ModuleHead SrcSpanInfo -> [TagC]
+createModuleTags (ModuleHead _ (ModuleName moduleLoc moduleName) _ mbExportSpecList) =
+    case mbExportSpecList of
+        Nothing -> [moduleTag]
+        Just (ExportSpecList _ exports) ->
+            moduleTag : map createExportTag exports
+    where
+        moduleTag = createTag moduleName TModule Nothing Nothing Nothing moduleLoc
+        createExportTag :: ExportSpec SrcSpanInfo -> TagC
+        createExportTag exportSpec =
+            let (name, loc) = extractExportSpec exportSpec
+            in createTag name TExport Nothing Nothing Nothing loc
 
 createImportTag :: ImportDecl SrcSpanInfo -> TagC
 createImportTag (ImportDecl loc (ModuleName _ name) qualified _ _ mbAlias mbSpecs) =
@@ -162,6 +174,13 @@ createConstructorTag parent (QualConDecl _ _ _ con) =
     let (name, loc) = extractConDecl con
     in createTag name TConstructor (Just parent) Nothing Nothing loc
 
+extractExportSpec :: ExportSpec SrcSpanInfo -> (String, SrcSpanInfo)
+extractExportSpec (EVar _ name) = extractQName name
+extractExportSpec (EAbs _ name) = extractQName name
+extractExportSpec (EThingAll _ name) = extractQName name
+extractExportSpec (EThingWith _ name _) = extractQName name
+extractExportSpec (EModuleContents _ (ModuleName loc name)) = (name, loc)
+
 extractDeclHead :: DeclHead SrcSpanInfo -> (String, SrcSpanInfo)
 extractDeclHead (DHead _ name _) = extractName name
 extractDeclHead (DHInfix _ _ name _) = extractName name
@@ -175,3 +194,9 @@ extractConDecl (RecDecl _ name _) = extractName name
 extractName :: Name SrcSpanInfo -> (String, SrcSpanInfo)
 extractName (Ident loc name) = (name, loc)
 extractName (Symbol loc name) = (name, loc)
+
+extractQName :: QName SrcSpanInfo -> (String, SrcSpanInfo)
+extractQName (Qual loc (ModuleName _ moduleName) name) =
+    (moduleName ++ "." ++ fst (extractName name), loc)
+extractQName (UnQual loc name) = (fst (extractName name), loc)
+extractQName (Special loc _) = ("_special_", loc)  -- TODO
