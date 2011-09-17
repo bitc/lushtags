@@ -13,4 +13,6 @@ executable lushtags
   hs-source-dirs:    src
   main-is:           Main.hs
   default-language:  Haskell98
-  build-depends:     base >= 4 && < 5
+  build-depends:     base >= 4 && < 5,
+                     vector == 0.9.*,
+                     text == 0.11.*
