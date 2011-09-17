@@ -26,8 +26,11 @@ import Language.Haskell.Exts.Annotated
     , Module(..)
     , ModuleHead(..)
     , ModuleName(..)
+    , Decl(..)
+    , DeclHead(..)
     , SrcSpan(..)
     , SrcSpanInfo(..)
+    , Name(..)
     )
 
 data Tag = Tag
@@ -44,12 +47,14 @@ data Tag = Tag
 data TagKind
     = TModule
     | TImport
+    | TType
     | TFunction
     deriving (Eq, Ord, Show)
 
 tagKindLetter :: TagKind -> String
 tagKindLetter TModule = "m"
 tagKindLetter TImport = "i"
+tagKindLetter TType = "t"
 tagKindLetter TFunction = "f"
 
 tagToString :: Tag -> String
@@ -70,13 +75,14 @@ type FileLines = Vector String
 type TagC = FileLines -> Tag
 
 createTags :: (Module SrcSpanInfo, FileLines) -> [Tag]
-createTags (Module _ mbHead _ imports _, fileLines) =
+createTags (Module _ mbHead _ imports decls, fileLines) =
     let moduleTag = case mbHead of
             Just (ModuleHead _ (ModuleName loc name) _ _) ->
                 [tagC $ createTag name TModule Nothing Nothing loc]
             Nothing -> []
         importTags = map (tagC . createImportTag) imports
-    in moduleTag ++ importTags
+        declsTags = map tagC (concatMap createDeclTags decls)
+    in moduleTag ++ importTags ++ declsTags
     where
         tagC :: TagC -> Tag
         tagC = ($ fileLines)
@@ -100,3 +106,18 @@ createImportTag (ImportDecl loc (ModuleName _ name) _ _ _ mbAlias _) =
             Nothing -> Nothing
             Just (ModuleName _ alias) -> Just alias
     in createTag name TImport Nothing signature loc
+
+createDeclTags :: Decl SrcSpanInfo -> [TagC]
+createDeclTags (TypeDecl _ hd _) =
+    let (name, loc) = extractDeclHead hd
+    in [createTag name TType Nothing Nothing loc]
+createDeclTags _ = []
+
+extractDeclHead :: DeclHead SrcSpanInfo -> (String, SrcSpanInfo)
+extractDeclHead (DHead _ name _) = extractName name
+extractDeclHead (DHInfix _ _ name _) = extractName name
+extractDeclHead (DHParen _ hd') = extractDeclHead hd'
+
+extractName :: Name SrcSpanInfo -> (String, SrcSpanInfo)
+extractName (Ident loc name) = (name, loc)
+extractName (Symbol loc name) = (name, loc)
