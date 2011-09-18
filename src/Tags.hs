@@ -101,11 +101,27 @@ createTags (Module _ mbHead _ imports decls, fileLines) =
     let moduleTags = map tagC (maybe [] createModuleTags mbHead)
         importTags = map (tagC . createImportTag) imports
         declsTags = map tagC (concatMap createDeclTags decls)
-    in moduleTags ++ importTags ++ declsTags
+        exportTags = filter ((==TExport) . tagKind) moduleTags
+    -- TODO If there is no ModuleHead then apply public access modifier to all
+    -- declarations tags
+    in moduleTags ++ importTags ++ (applyAccessModifiers exportTags declsTags)
     where
         tagC :: TagC -> Tag
         tagC = ($ fileLines)
 createTags _ = error "TODO Module is XmlPage/XmlHybrid (!)"
+
+-- Apply a public access modifier to all declarations that are listed in the
+-- module export specification
+applyAccessModifiers :: [Tag] -> [Tag] -> [Tag]
+applyAccessModifiers exportTags declTags = map applySingle declTags
+    where
+        applySingle :: Tag -> Tag
+        applySingle tag =
+            let name = tagName tag
+                exported = any ((==name) . tagName) exportTags
+            in if exported
+                then tag { tagAccess = Just AccessPublic }
+                else tag
 
 createTag :: String -> TagKind -> Maybe (TagKind, String) -> Maybe String -> Maybe TagAccess -> SrcSpanInfo -> TagC
 createTag name kind parent signature access (SrcSpanInfo (SrcSpan file line _ _ _) _) fileLines = Tag
