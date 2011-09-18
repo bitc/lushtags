@@ -14,7 +14,7 @@
 
 module Main (main) where
 
-import Data.List (isPrefixOf)
+import Data.List (isPrefixOf, partition)
 import Data.Vector(Vector, fromList)
 import Language.Haskell.Exts.Annotated (parseFileContentsWithMode, ParseMode(..), knownExtensions, ParseResult(ParseOk, ParseFailed))
 import System.Environment (getArgs, getProgName)
@@ -27,24 +27,28 @@ import Tags (Tag, createTags, tagToString)
 main :: IO ()
 main = do
     rawArgs <- getArgs
-    let files = dropOptions rawArgs
+    let (options, files) = getOptions rawArgs
+        ignore_parse_error = "--ignore-parse-error" `elem` options
     case files of
         [] -> do
             progName <- getProgName
-            hPutStrLn stderr $ "Usage: " ++ progName ++ " [--] <file>"
-        filename:_ -> processFile filename >>= printTags
+            hPutStrLn stderr $ "Usage: " ++ progName ++ " [options] [--] <file>"
+        filename:_ -> processFile filename ignore_parse_error >>= printTags
 
 printTags :: [Tag] -> IO ()
 printTags tags =
     T.putStr $ T.unlines $ map (T.pack . tagToString) tags
 
-processFile :: FilePath -> IO [Tag]
-processFile file = do
+processFile :: FilePath -> Bool -> IO [Tag]
+processFile file ignore_parse_error = do
     (fileContents, fileLines) <- loadFile file
     case parseFileContentsWithMode parseMode fileContents of
         ParseFailed loc message ->
-            -- TODO Better error reporting
-            fail $ "Parse error: " ++ show loc ++ ": " ++ message
+            if ignore_parse_error then
+                return []
+            else
+                -- TODO Better error reporting
+                fail $ "Parse error: " ++ show loc ++ ": " ++ message
         ParseOk parsedModule -> return $ createTags (parsedModule, fileLines)
     where
         parseMode = ParseMode
@@ -64,10 +68,11 @@ loadFile file = do
     let fileLines = fromList stringLines
     return (fullContents, fileLines)
 
-dropOptions :: [String] -> [String]
-dropOptions args =
+getOptions :: [String] -> ([String], [String])
+getOptions args =
     let (start, end) = span (/= "--") args
-    in  filter (not . isPrefixOf "-") start ++ dropSep end
+        (options, nonOptions) = partition (isPrefixOf "-") start
+    in (options, nonOptions ++ dropSep end)
     where
         dropSep ("--":xs) = xs
         dropSep xs        = xs
