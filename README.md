@@ -27,6 +27,8 @@ used with Tagbar you get these features:
   you can correctly jump to tags even if they have moved in the source code
   during editing.
 
+![screenshot](https://github.com/bitc/lushtags/raw/master/doc/screenshot-tagbar-2011-09-19.png)
+
 [1]: http://hackage.haskell.org/package/hasktags
 [2]: http://kingfisher.nfshost.com/sw/gasbag/
 [3]: http://hackage.haskell.org/package/hothasktags
