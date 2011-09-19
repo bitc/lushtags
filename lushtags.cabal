@@ -5,6 +5,7 @@ build-type:          Simple
 license:             MIT
 license-file:        LICENSE
 author:              Bit Connor
+homepage:            https://github.com/bitc/lushtags
 maintainer:          bit@mutantlemon.com
 category:            Development
 synopsis:            Create ctags compatible tags files for Haskell programs
