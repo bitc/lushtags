@@ -1,13 +1,13 @@
 name:                lushtags
 version:             0.0.1
-category:            Development
-synopsis:            Create ctags compatible tags files for Haskell programs
+cabal-version:       >=1.10
+build-type:          Simple
 license:             MIT
 license-file:        LICENSE
 author:              Bit Connor
 maintainer:          bit@mutantlemon.com
-cabal-version:       >=1.10
-build-type:          Simple
+category:            Development
+synopsis:            Create ctags compatible tags files for Haskell programs
 
 source-repository head
   type:              git
