@@ -9,6 +9,10 @@ maintainer:          bit@mutantlemon.com
 cabal-version:       >=1.10
 build-type:          Simple
 
+source-repository head
+  type:              git
+  location:          git://github.com/bitc/lushtags.git
+
 executable lushtags
   hs-source-dirs:    src
   main-is:           Main.hs
