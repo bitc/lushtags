@@ -45,7 +45,7 @@ Using lushtags with Vim and the Tagbar plugin
 
 2. Install the Tagbar plugin. Tagbar can be found at
 
-    <http://www.vim.org/scripts/script.php?script_id=3465>
+    <http://www.vim.org/scripts/script.php?script_id=3465>  
     <http://majutsushi.github.com/tagbar/>
 
 3. Install the included Haskell Tagbar configuration:
