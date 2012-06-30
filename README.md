@@ -39,9 +39,9 @@ Using lushtags with Vim and the Tagbar plugin
 
 1. Build and install the lushtags executable
 
-    $ cabal configure
-    $ cabal build
-    $ cabal install
+        $ cabal configure
+        $ cabal build
+        $ cabal install
 
 2. Install the Tagbar plugin. Tagbar can be found at
 
@@ -50,11 +50,11 @@ Using lushtags with Vim and the Tagbar plugin
 
 3. Install the included Haskell Tagbar configuration:
 
-    $ cp plugin/tagbar-haskell.vim ~/.vim/plugin/
+        $ cp plugin/tagbar-haskell.vim ~/.vim/plugin/
 
 4. Try it out:
 
-    $ vim Hello.hs
+        $ vim Hello.hs
 
 Now open the Tagbar with the command `:TagbarOpen`. An interactive sidebar will
 appear with all of the tags in your Haskell source file.
