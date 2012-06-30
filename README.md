@@ -50,7 +50,7 @@ Using lushtags with Vim and the Tagbar plugin
 
 3. Install the included Haskell Tagbar configuration:
 
-    $ cp util/tagbar-haskell.vim ~/.vim/plugin/
+    $ cp plugin/tagbar-haskell.vim ~/.vim/plugin/
 
 4. Try it out:
 
