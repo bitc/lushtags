@@ -182,6 +182,14 @@ createDeclTags (TypeSig _ names t) =
         createFunctionTag name =
             let (n, loc) = extractName name
             in createTag n TFunction Nothing (Just sig) Nothing loc
+createDeclTags (ForImp _ _ _ _ name' t) =
+    [createFunctionTag name']
+    where
+        sig = prettyPrintStyleMode (Style OneLineMode 0 0) defaultMode t
+        createFunctionTag :: Name SrcSpanInfo -> TagC
+        createFunctionTag name =
+            let (n, loc) = extractName name
+            in createTag n TFunction Nothing (Just sig) Nothing loc
 createDeclTags _ = []
 
 -- TODO Also create tags for record fields
