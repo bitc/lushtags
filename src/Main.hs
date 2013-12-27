@@ -17,6 +17,7 @@ module Main (main) where
 import Data.List (isPrefixOf, partition)
 import Data.Vector(Vector, fromList)
 import Language.Haskell.Exts.Annotated (parseFileContentsWithMode, ParseMode(..), knownExtensions, ParseResult(ParseOk, ParseFailed))
+import Language.Haskell.Exts.Extension (Language(..))
 import System.Environment (getArgs, getProgName)
 import System.IO (hPutStrLn, stderr)
 import qualified Data.Text as T (unpack, lines, pack, unlines)
@@ -53,6 +54,7 @@ processFile file ignore_parse_error = do
     where
         parseMode = ParseMode
             { parseFilename = file
+            , baseLanguage = Haskell2010
             , extensions = knownExtensions
             , ignoreLanguagePragmas = False
             , ignoreLinePragmas = True
