@@ -53,7 +53,7 @@ executable lushtags
   other-modules:     Tags
   default-language:  Haskell98
   ghc-options:       -Wall
-  build-depends:     base >= 4 && < 5,
-                     vector >= 0.9 && < 0.11,
-                     text == 0.11.*,
-                     haskell-src-exts >= 1.11.1 && < 1.15
+  build-depends:     base >= 4.8,
+                     vector >= 0.9,
+                     text >= 0.11,
+                     haskell-src-exts >= 1.16
