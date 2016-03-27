@@ -59,6 +59,7 @@ processFile file ignore_parse_error = do
             , ignoreLanguagePragmas = False
             , ignoreLinePragmas = True
             , fixities = Nothing
+            , ignoreFunctionArity = False
             }
 
 loadFile :: FilePath -> IO (String, Vector String)
