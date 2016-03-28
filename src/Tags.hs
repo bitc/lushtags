@@ -150,7 +150,7 @@ createModuleTags (ModuleHead _ (ModuleName moduleLoc moduleName) _ mbExportSpecL
             in createTag name TExport Nothing Nothing Nothing loc
 
 createImportTag :: ImportDecl SrcSpanInfo -> TagC
-createImportTag (ImportDecl loc (ModuleName _ name) qualified _ _ mbAlias mbSpecs) =
+createImportTag (ImportDecl loc (ModuleName _ name) qualified _ _ _ mbAlias mbSpecs) =
     let signature = case mbAlias of
             Nothing -> Nothing
             Just (ModuleName _ alias) -> Just alias
@@ -192,15 +192,16 @@ createConstructorTag parent (QualConDecl _ _ _ con) =
 
 extractExportSpec :: ExportSpec SrcSpanInfo -> (String, SrcSpanInfo)
 extractExportSpec (EVar _ name) = extractQName name
-extractExportSpec (EAbs _ name) = extractQName name
+extractExportSpec (EAbs _ _ name) = extractQName name
 extractExportSpec (EThingAll _ name) = extractQName name
 extractExportSpec (EThingWith _ name _) = extractQName name
 extractExportSpec (EModuleContents _ (ModuleName loc name)) = (name, loc)
 
 extractDeclHead :: DeclHead SrcSpanInfo -> (String, SrcSpanInfo)
-extractDeclHead (DHead _ name _) = extractName name
-extractDeclHead (DHInfix _ _ name _) = extractName name
+extractDeclHead (DHead _ name) = extractName name
+extractDeclHead (DHInfix _ _ name) = extractName name
 extractDeclHead (DHParen _ hd') = extractDeclHead hd'
+extractDeclHead (DHApp _ hd' _) = extractDeclHead hd'
 
 extractConDecl :: ConDecl SrcSpanInfo -> (String, SrcSpanInfo)
 extractConDecl (ConDecl _ name _) = extractName name
