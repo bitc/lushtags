@@ -39,9 +39,16 @@ Using lushtags with Vim and the Tagbar plugin
 
 1. Build and install the lushtags executable
 
+    Using cabal:
+
         $ cabal configure
         $ cabal build
         $ cabal install
+
+    Using stack:
+
+        $ stack build
+        $ stack install
 
 2. Install the Tagbar plugin. Tagbar can be found at
 
