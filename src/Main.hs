@@ -16,7 +16,7 @@ module Main (main) where
 
 import Data.List (isPrefixOf, partition)
 import Data.Vector(Vector, fromList)
-import Language.Haskell.Exts.Annotated (parseFileContentsWithMode, ParseMode(..), knownExtensions, ParseResult(ParseOk, ParseFailed))
+import Language.Haskell.Exts (parseFileContentsWithMode, ParseMode(..), knownExtensions, ParseResult(ParseOk, ParseFailed))
 import Language.Haskell.Exts.Extension (Language(..))
 import System.Environment (getArgs, getProgName)
 import System.IO (hPutStrLn, stderr)
