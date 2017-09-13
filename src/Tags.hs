@@ -20,8 +20,8 @@ module Tags
     ) where
 
 import Data.Vector(Vector, (!))
-import Language.Haskell.Exts.Annotated (SrcSpan(..), SrcSpanInfo(..))
-import Language.Haskell.Exts.Annotated.Syntax
+import Language.Haskell.Exts (SrcSpan(..), SrcSpanInfo(..))
+import Language.Haskell.Exts.Syntax
 import Language.Haskell.Exts.Pretty (prettyPrintStyleMode, Style(..), Mode(OneLineMode), defaultMode)
 
 data Tag = Tag
@@ -193,8 +193,7 @@ createConstructorTag parent (QualConDecl _ _ _ con) =
 extractExportSpec :: ExportSpec SrcSpanInfo -> (String, SrcSpanInfo)
 extractExportSpec (EVar _ name) = extractQName name
 extractExportSpec (EAbs _ _ name) = extractQName name
-extractExportSpec (EThingAll _ name) = extractQName name
-extractExportSpec (EThingWith _ name _) = extractQName name
+extractExportSpec (EThingWith _ _ name _) = extractQName name
 extractExportSpec (EModuleContents _ (ModuleName loc name)) = (name, loc)
 
 extractDeclHead :: DeclHead SrcSpanInfo -> (String, SrcSpanInfo)
